@@ -58,6 +58,7 @@ void ofApp::setup() {
 	boidGameController.setKinectRes(kinectRes);
 	boidGameController.setKinectROI(kinectROI);
 
+	isRaining = false;
 }
 
 
@@ -76,6 +77,8 @@ void ofApp::update() {
 
 	mapGameController.update();
 	boidGameController.update();
+
+	updateRain();
 }
 
 
@@ -102,6 +105,7 @@ void ofApp::drawProjWindow(ofEventArgs &args)
 		sandSurfaceRenderer->drawProjectorWindow();
 		mapGameController.drawProjectorWindow();
 		boidGameController.drawProjectorWindow();
+		drawRain();
 	}
 	kinectProjector->drawProjectorWindow();
 }
@@ -137,7 +141,11 @@ void ofApp::keyPressed(int key)
 			kinectProjector->startApplication();
 		}
 	}
-	else if (key == 'f' || key == 'r')
+	else if (key == 'r' || key == 'R')
+	{
+		isRaining = !isRaining;
+	}
+	else if (key == 'f')
 	{
 		if (kinectProjector->GetApplicationState() == KinectProjector::APPLICATION_STATE_RUNNING)
 		{
@@ -252,3 +260,56 @@ void ofApp::dragEvent(ofDragInfo dragInfo) {
 
 }
 
+void ofApp::updateRain() {
+	if (!isRaining && rainDrops.empty()) return;
+
+	// Spawn new raindrops if raining
+	if (isRaining) {
+		// Spawn a few drops per frame
+		int numDropsToSpawn = ofRandom(1, 4);
+		for (int i = 0; i < numDropsToSpawn; ++i) {
+			RainDrop drop;
+			// Spawn uniformly across the projector width
+			drop.pos.x = ofRandom(0, projWindow->getWidth());
+			drop.pos.y = -20; // Start slightly above the screen
+			// Downward speed with slight horizontal variance
+			drop.speed.y = ofRandom(15.0f, 25.0f);
+			drop.speed.x = ofRandom(-1.0f, 1.0f);
+			drop.length = ofRandom(10.0f, 30.0f);
+			drop.weight = ofRandom(0.5f, 2.0f);
+			rainDrops.push_back(drop);
+		}
+	}
+
+	// Update existing drops
+	for (int i = rainDrops.size() - 1; i >= 0; --i) {
+		rainDrops[i].pos += rainDrops[i].speed;
+
+		// Calculate the line coordinates
+		ofVec2f endPos = rainDrops[i].pos + rainDrops[i].speed.getNormalized() * rainDrops[i].length;
+
+		// Remove drop if it goes out of the screen bounds
+		if (endPos.y > projWindow->getHeight() || 
+			endPos.x < 0 || endPos.x > projWindow->getWidth()) {
+			rainDrops.erase(rainDrops.begin() + i);
+		}
+	}
+}
+
+void ofApp::drawRain() {
+	if (rainDrops.empty()) return;
+
+	// Semi-transparent light blue
+	ofSetColor(150, 200, 255, 180);
+
+	for (const auto& drop : rainDrops) {
+		ofSetLineWidth(drop.weight);
+		
+		ofVec2f endPos = drop.pos + drop.speed.getNormalized() * drop.length;
+		ofDrawLine(drop.pos.x, drop.pos.y, endPos.x, endPos.y);
+	}
+
+	// Reset drawing state
+	ofSetLineWidth(1.0f);
+	ofSetColor(255);
+}

@@ -60,4 +60,17 @@ private:
 
 	// Main window ROI 
 	ofRectangle mainWindowROI;
+
+	// Dynamic Rain variables
+	struct RainDrop {
+		ofVec2f pos;
+		ofVec2f speed;
+		float length;
+		float weight;
+	};
+	std::vector<RainDrop> rainDrops;
+	bool isRaining;
+
+	void updateRain();
+	void drawRain();
 };
