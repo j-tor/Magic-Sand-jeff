@@ -191,7 +191,7 @@ void SandSurfaceRenderer::setupMesh(){
         {
             ofPoint pt = ofPoint(x+kinectROI.x,y+kinectROI.y,0.0f)-ofPoint(0.5,0.5,0); // We move of a half pixel to center the color pixel (more beautiful)
             mesh.addVertex(pt); // make a new vertex
-            mesh.addTexCoord(pt);
+            mesh.addTexCoord(ofVec2f(pt.x, pt.y));
         }
     for(unsigned int y=0;y<meshheight-1;y++)
         for(unsigned int x=0;x<meshwidth-1;x++)
@@ -331,7 +331,7 @@ void SandSurfaceRenderer::setupGui(){
 	gui2->setAutoDraw(false);
 	gui3->setAutoDraw(false);
 	
-	int pos = find(colorMapFilesList.begin(), colorMapFilesList.end(), colorMapFile) - colorMapFilesList.begin();
+	size_t pos = find(colorMapFilesList.begin(), colorMapFilesList.end(), colorMapFile) - colorMapFilesList.begin();
     if (pos < colorMapFilesList.size())
         gui2->getDropdown("Load Color Map")->select(pos);
     
@@ -511,10 +511,10 @@ bool SandSurfaceRenderer::loadSettings(){
     ofXml xml;
     if (!xml.load(settingsFile))
         return false;
-    xml.setTo("SURFACERENDERERSETTINGS");
-    colorMapFile = xml.getValue<string>("colorMapFile");
-    drawContourLines = xml.getValue<bool>("drawContourLines");
-    contourLineDistance = xml.getValue<float>("contourLineDistance");
+    auto settings = xml.getChild("SURFACERENDERERSETTINGS");
+    colorMapFile = settings.getChild("colorMapFile").getValue<string>();
+    drawContourLines = settings.getChild("drawContourLines").getValue<bool>();
+    contourLineDistance = settings.getChild("contourLineDistance").getValue<float>();
     
     return true;
 }
@@ -523,12 +523,10 @@ bool SandSurfaceRenderer::saveSettings(){
     string settingsFile = "settings/sandSurfaceRendererSettings.xml";
 
     ofXml xml;
-    xml.addChild("SURFACERENDERERSETTINGS");
-    xml.setTo("SURFACERENDERERSETTINGS");
-    xml.addValue("colorMapFile", colorMapFile);
-    xml.addValue("drawContourLines", drawContourLines);
-    xml.addValue("contourLineDistance", contourLineDistance);
-    xml.setToParent();
+    auto settings = xml.appendChild("SURFACERENDERERSETTINGS");
+    settings.appendChild("colorMapFile").set(colorMapFile);
+    settings.appendChild("drawContourLines").set(drawContourLines);
+    settings.appendChild("contourLineDistance").set(contourLineDistance);
     return xml.save(settingsFile);
 }
 
